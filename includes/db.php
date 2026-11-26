@@ -107,6 +107,29 @@ CREATE TABLE IF NOT EXISTS `activities` (
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `jv_projects` (
+  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `jv_id` VARCHAR(60) NOT NULL UNIQUE,
+  `feasibility_by` VARCHAR(120) DEFAULT '',
+  `updated_by` VARCHAR(120) DEFAULT '',
+  `rea_no` VARCHAR(40) DEFAULT '',
+  `ratings` VARCHAR(20) DEFAULT '',
+  `google_pin` VARCHAR(500) DEFAULT '',
+  `location` VARCHAR(255) DEFAULT '',
+  `area` VARCHAR(150) DEFAULT '',
+  `road_width` VARCHAR(100) DEFAULT '',
+  `goodwill` VARCHAR(100) DEFAULT '',
+  `sharing` VARCHAR(100) DEFAULT '',
+  `loi_sent` VARCHAR(60) DEFAULT '',
+  `mou` VARCHAR(60) DEFAULT '',
+  `jda_llp` VARCHAR(60) DEFAULT '',
+  `status` VARCHAR(60) DEFAULT 'Active',
+  `notes` TEXT,
+  `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 ");
 
 // Seed default admin user if users table is empty

@@ -8,6 +8,7 @@ $total_leads       = (int)$pdo->query("SELECT COUNT(*) FROM leads")->fetchColumn
 $active_leads      = (int)$pdo->query("SELECT COUNT(*) FROM leads WHERE status NOT IN ('Closed','Lost')")->fetchColumn();
 $closed_leads      = (int)$pdo->query("SELECT COUNT(*) FROM leads WHERE status = 'Closed'")->fetchColumn();
 $available_props   = (int)$pdo->query("SELECT COUNT(*) FROM properties WHERE status = 'Available'")->fetchColumn();
+$jv_count          = (int)$pdo->query("SELECT COUNT(*) FROM jv_projects")->fetchColumn();
 
 $stmtToday = $pdo->prepare("SELECT COUNT(*) FROM followups WHERE followup_date = ? AND status = 'Pending'");
 $stmtToday->execute([$today]);
@@ -59,6 +60,13 @@ $source_data  = $pdo->query("SELECT source, COUNT(*) AS cnt FROM leads GROUP BY 
         <div>
             <div class="stat-num"><?= $available_props ?></div>
             <div class="stat-label">Available Properties</div>
+        </div>
+    </div>
+    <div class="stat-card stat-indigo">
+        <div class="stat-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6"/><line x1="8" y1="2" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="22"/></svg></div>
+        <div>
+            <div class="stat-num"><?= $jv_count ?></div>
+            <div class="stat-label">JV Projects</div>
         </div>
     </div>
     <div class="stat-card <?= $today_followups > 0 ? 'stat-red' : 'stat-gray' ?>">
