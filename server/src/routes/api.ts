@@ -261,6 +261,106 @@ router.delete('/leads/:id', (req: Request, res: Response) => {
   res.json({ success: true });
 });
 
+router.patch('/leads/:id/status', (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const { status } = req.body as { status?: string };
+  const allowed = ['New', 'Contacted', 'Site Visit', 'Negotiation', 'Closed', 'Lost'];
+  if (!status || !allowed.includes(status)) {
+    res.status(400).json({ error: 'Invalid status' });
+    return;
+  }
+
+  const existing = db.prepare('SELECT id, name, status FROM leads WHERE id = ?').get(id) as
+    | { id: number; name: string; status: string }
+    | undefined;
+  if (!existing) {
+    res.status(404).json({ error: 'Lead not found' });
+    return;
+  }
+
+  db.prepare("UPDATE leads SET status = ?, updated_at = datetime('now', 'localtime') WHERE id = ?").run(status, id);
+  logActivity('Lead', `Moved ${existing.name} from ${existing.status} to ${status}`);
+  const updated = db.prepare('SELECT * FROM leads WHERE id = ?').get(id);
+  res.json(updated);
+});
+
+router.get('/leads/:id/matches', (req: Request, res: Response) => {
+  const id = Number(req.params.id);
+  const lead = db.prepare('SELECT * FROM leads WHERE id = ?').get(id) as
+    | {
+        id: number;
+        name: string;
+        property_type: string;
+        budget_min: number;
+        budget_max: number;
+        location_pref: string;
+      }
+    | undefined;
+
+  if (!lead) {
+    res.status(404).json({ error: 'Lead not found' });
+    return;
+  }
+
+  const props = db.prepare("SELECT * FROM properties WHERE status = 'Available'").all() as Array<{
+    id: number;
+    title: string;
+    type: string;
+    location: string;
+    area_sqft: number;
+    price: number;
+    status: string;
+    bedrooms: number;
+    bathrooms: number;
+    description: string;
+  }>;
+
+  const prefLocTokens = (lead.location_pref || '')
+    .toLowerCase()
+    .split(/[,\s]+/)
+    .filter((t) => t.length > 2);
+
+  const scored = props
+    .map((p) => {
+      let score = 0;
+      const reasons: string[] = [];
+
+      // Type match (35 pts)
+      if (!lead.property_type || lead.property_type === 'Any' || p.type === lead.property_type) {
+        score += 35;
+        reasons.push('Type match');
+      }
+
+      // Budget match (40 pts)
+      const min = lead.budget_min || 0;
+      const max = lead.budget_max || 0;
+      if (max > 0) {
+        if (p.price >= min * 0.9 && p.price <= max * 1.1) {
+          score += 40;
+          reasons.push('Within budget');
+        } else if (p.price <= max * 1.25) {
+          score += 20;
+          reasons.push('Near budget');
+        }
+      } else {
+        score += 20;
+      }
+
+      // Location match (25 pts)
+      const propLoc = p.location.toLowerCase();
+      if (prefLocTokens.length > 0 && prefLocTokens.some((tok) => propLoc.includes(tok))) {
+        score += 25;
+        reasons.push('Preferred location');
+      }
+
+      return { ...p, matchScore: score, matchReasons: reasons };
+    })
+    .filter((p) => p.matchScore >= 35)
+    .sort((a, b) => b.matchScore - a.matchScore);
+
+  res.json({ lead, matches: scored });
+});
+
 // --- FOLLOW-UPS ---
 router.get('/followups', (req: Request, res: Response) => {
   const filter = String(req.query.filter ?? 'today');

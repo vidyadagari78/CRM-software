@@ -9,6 +9,7 @@ import {
   LogOut,
   Menu,
   Building2,
+  Columns3,
 } from 'lucide-react';
 import { clearAuth, getStoredUser } from '../api/client';
 
@@ -42,6 +43,7 @@ export const Layout: React.FC<LayoutProps> = ({
   const navItems = [
     { to: '/', label: 'Dashboard', icon: <LayoutGrid size={18} /> },
     { to: '/leads', label: 'Leads', icon: <Users size={18} /> },
+    { to: '/pipeline', label: 'Deal Pipeline', icon: <Columns3 size={18} /> },
     {
       to: '/followups',
       label: 'Follow-ups',

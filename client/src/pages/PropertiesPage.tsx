@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, X, Home } from 'lucide-react';
+import { Plus, X, Home, Calculator, Download } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { apiFetch } from '../api/client';
 import {
@@ -7,6 +7,7 @@ import {
   PROPERTY_TYPES,
   PROPERTY_STATUSES,
   formatPrice,
+  exportToCsv,
 } from '../types';
 
 const emptyProp = {
@@ -31,6 +32,11 @@ export const PropertiesPage: React.FC = () => {
   const [form, setForm] = useState(emptyProp);
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
+  const [calcProp, setCalcProp] = useState<Property | null>(null);
+  const [downPct, setDownPct] = useState(20);
+  const [rate, setRate] = useState(8.5);
+  const [years, setYears] = useState(20);
+  const [commPct, setCommPct] = useState(2);
 
   const loadProperties = async (search = q, type = typeFilter, status = statusFilter) => {
     const params = new URLSearchParams();
@@ -165,9 +171,31 @@ export const PropertiesPage: React.FC = () => {
             </button>
           )}
         </form>
-        <button className="btn btn-primary" onClick={openNew}>
-          <Plus size={16} /> Add Property
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            className="btn btn-ghost"
+            onClick={() =>
+              exportToCsv(
+                'properties-export.csv',
+                properties.map((p) => ({
+                  Title: p.title,
+                  Type: p.type,
+                  Location: p.location,
+                  Price: p.price,
+                  AreaSqFt: p.area_sqft,
+                  Bedrooms: p.bedrooms,
+                  Bathrooms: p.bathrooms,
+                  Status: p.status,
+                }))
+              )
+            }
+          >
+            <Download size={15} /> Export CSV
+          </button>
+          <button className="btn btn-primary" onClick={openNew}>
+            <Plus size={16} /> Add Property
+          </button>
+        </div>
       </div>
 
       {formOpen && (
@@ -326,6 +354,13 @@ export const PropertiesPage: React.FC = () => {
               )}
               <div className="prop-actions">
                 <button
+                  className="btn btn-xs btn-ghost"
+                  onClick={() => setCalcProp(prop)}
+                  title="EMI & Commission Calculator"
+                >
+                  <Calculator size={13} /> EMI / Comm
+                </button>
+                <button
                   className="btn btn-xs btn-outline"
                   onClick={() => openEdit(prop)}
                 >
@@ -342,6 +377,98 @@ export const PropertiesPage: React.FC = () => {
           ))}
         </div>
       )}
+
+      {calcProp && (() => {
+        const principal = calcProp.price * (1 - downPct / 100);
+        const monthlyRate = rate / 12 / 100;
+        const n = years * 12;
+        const emi =
+          monthlyRate > 0
+            ? (principal * monthlyRate * Math.pow(1 + monthlyRate, n)) /
+              (Math.pow(1 + monthlyRate, n) - 1)
+            : principal / n;
+        const commission = (calcProp.price * commPct) / 100;
+
+        return (
+          <div className="modal-backdrop" onClick={() => setCalcProp(null)}>
+            <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+              <div className="modal-head">
+                <span>EMI &amp; Commission — {calcProp.title}</span>
+                <button
+                  className="close-btn"
+                  style={{ color: '#475569' }}
+                  onClick={() => setCalcProp(null)}
+                >
+                  <X size={18} />
+                </button>
+              </div>
+              <div className="modal-body">
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>Down Payment (%)</label>
+                    <input
+                      type="number"
+                      min={0}
+                      max={90}
+                      value={downPct}
+                      onChange={(e) => setDownPct(Number(e.target.value) || 0)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Interest Rate (% p.a.)</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      min={1}
+                      max={25}
+                      value={rate}
+                      onChange={(e) => setRate(Number(e.target.value) || 1)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Tenure (Years)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={35}
+                      value={years}
+                      onChange={(e) => setYears(Number(e.target.value) || 1)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label>Brokerage (%)</label>
+                    <input
+                      type="number"
+                      step="0.25"
+                      min={0}
+                      max={10}
+                      value={commPct}
+                      onChange={(e) => setCommPct(Number(e.target.value) || 0)}
+                    />
+                  </div>
+                </div>
+
+                <div className="calc-result-grid">
+                  <div className="calc-box">
+                    <div className="calc-box-val">
+                      ₹{Math.round(emi).toLocaleString('en-IN')}/mo
+                    </div>
+                    <div className="calc-box-lbl">Estimated Monthly EMI</div>
+                  </div>
+                  <div className="calc-box">
+                    <div className="calc-box-val">{formatPrice(principal)}</div>
+                    <div className="calc-box-lbl">Loan Amount</div>
+                  </div>
+                  <div className="calc-box">
+                    <div className="calc-box-val">{formatPrice(commission)}</div>
+                    <div className="calc-box-lbl">Est. Brokerage ({commPct}%)</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
     </Layout>
   );
 };

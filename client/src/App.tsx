@@ -7,6 +7,7 @@ import { LeadsPage } from './pages/LeadsPage';
 import { FollowupsPage } from './pages/FollowupsPage';
 import { PropertiesPage } from './pages/PropertiesPage';
 import { ActivityPage } from './pages/ActivityPage';
+import { PipelinePage } from './pages/PipelinePage';
 
 const ProtectedRoute: React.FC<{ children: React.ReactElement }> = ({
   children,
@@ -35,6 +36,14 @@ export function App() {
           element={
             <ProtectedRoute>
               <LeadsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pipeline"
+          element={
+            <ProtectedRoute>
+              <PipelinePage />
             </ProtectedRoute>
           }
         />

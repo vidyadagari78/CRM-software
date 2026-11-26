@@ -1,14 +1,21 @@
 import React, { useEffect, useState } from 'react';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, Sparkles, Download } from 'lucide-react';
 import { Layout } from '../components/Layout';
 import { apiFetch } from '../api/client';
 import {
   Lead,
+  Property,
   LEAD_SOURCES,
   LEAD_STATUSES,
   PROPERTY_TYPES,
   formatPrice,
+  exportToCsv,
 } from '../types';
+
+interface MatchedProperty extends Property {
+  matchScore: number;
+  matchReasons: string[];
+}
 
 const emptyForm = {
   name: '',
@@ -34,6 +41,26 @@ export const LeadsPage: React.FC = () => {
   const [form, setForm] = useState(emptyForm);
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
+  const [matchModal, setMatchModal] = useState<{
+    lead: Lead;
+    matches: MatchedProperty[];
+  } | null>(null);
+  const [matchLoading, setMatchLoading] = useState(false);
+
+  const openMatches = async (lead: Lead) => {
+    setMatchLoading(true);
+    setError('');
+    try {
+      const res = await apiFetch<{ lead: Lead; matches: MatchedProperty[] }>(
+        `/api/leads/${lead.id}/matches`
+      );
+      setMatchModal(res);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load matches');
+    } finally {
+      setMatchLoading(false);
+    }
+  };
 
   const loadLeads = async (search = q, status = statusFilter) => {
     const params = new URLSearchParams();
@@ -157,9 +184,33 @@ export const LeadsPage: React.FC = () => {
             </button>
           )}
         </form>
-        <button className="btn btn-primary" onClick={openNew}>
-          <Plus size={16} /> Add Lead
-        </button>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button
+            className="btn btn-ghost"
+            onClick={() =>
+              exportToCsv(
+                'leads-export.csv',
+                leads.map((l) => ({
+                  Name: l.name,
+                  Phone: l.phone,
+                  Email: l.email,
+                  Source: l.source,
+                  PropertyType: l.property_type,
+                  BudgetMin: l.budget_min,
+                  BudgetMax: l.budget_max,
+                  Location: l.location_pref,
+                  Status: l.status,
+                  FollowUp: l.followup_date,
+                }))
+              )
+            }
+          >
+            <Download size={15} /> Export CSV
+          </button>
+          <button className="btn btn-primary" onClick={openNew}>
+            <Plus size={16} /> Add Lead
+          </button>
+        </div>
       </div>
 
       {formOpen && (
@@ -387,6 +438,14 @@ export const LeadsPage: React.FC = () => {
                     <td>{lead.followup_date || '—'}</td>
                     <td className="td-actions">
                       <button
+                        className="btn btn-xs btn-success"
+                        onClick={() => openMatches(lead)}
+                        disabled={matchLoading}
+                        title="Find matching properties"
+                      >
+                        <Sparkles size={12} /> Match
+                      </button>
+                      <button
                         className="btn btn-xs btn-outline"
                         onClick={() => openEdit(lead)}
                       >
@@ -406,6 +465,71 @@ export const LeadsPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {matchModal && (
+        <div className="modal-backdrop" onClick={() => setMatchModal(null)}>
+          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-head">
+              <span>
+                Smart Property Matches for {matchModal.lead.name}
+              </span>
+              <button
+                className="close-btn"
+                style={{ color: '#475569' }}
+                onClick={() => setMatchModal(null)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+            <div className="modal-body">
+              {matchModal.matches.length === 0 ? (
+                <div className="empty-state">
+                  No available properties match this lead&apos;s criteria yet.
+                </div>
+              ) : (
+                matchModal.matches.map((prop) => {
+                  const waText = encodeURIComponent(
+                    `Hi ${matchModal.lead.name}, we found a great match for you:\n` +
+                      `*${prop.title}* (${prop.type})\n` +
+                      `Location: ${prop.location}\n` +
+                      `Price: ${formatPrice(prop.price)}` +
+                      (prop.area_sqft ? ` | Area: ${prop.area_sqft} sq.ft` : '') +
+                      `\nWould you like to schedule a site visit?`
+                  );
+                  const cleanPhone = matchModal.lead.phone.replace(/[^0-9]/g, '');
+                  return (
+                    <div key={prop.id} className="match-card">
+                      <div className="match-top">
+                        <strong>{prop.title}</strong>
+                        <span className="match-score">{prop.matchScore}% Match</span>
+                      </div>
+                      <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                        {prop.location} · {prop.type} ·{' '}
+                        <strong style={{ color: '#e67e22' }}>
+                          {formatPrice(prop.price)}
+                        </strong>
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: '#15803d' }}>
+                        Matched on: {prop.matchReasons.join(' • ')}
+                      </div>
+                      <div style={{ marginTop: 4 }}>
+                        <a
+                          href={`https://wa.me/${cleanPhone}?text=${waText}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn btn-xs btn-success"
+                        >
+                          Send Pitch on WhatsApp
+                        </a>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </Layout>
   );
 };
