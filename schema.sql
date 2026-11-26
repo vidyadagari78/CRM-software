@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS `properties` (
   `description` TEXT,
   `bedrooms` INT NOT NULL DEFAULT 0,
   `bathrooms` INT NOT NULL DEFAULT 0,
-  `listed_date` DATE NOT NULL DEFAULT (CURRENT_DATE),
+  `listed_date` DATE DEFAULT NULL,
   `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   INDEX `idx_prop_status` (`status`),
