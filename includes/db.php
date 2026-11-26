@@ -20,7 +20,7 @@ try {
         PDO::ATTR_EMULATE_PREPARES   => false,
     ];
 
-    if (getenv('DB_SSL') === 'true') {
+    if (crm_env('DB_SSL') === 'true') {
         $options[PDO::MYSQL_ATTR_SSL_VERIFY_SERVER_CERT] = false;
     }
 
@@ -30,7 +30,8 @@ try {
         '<div style="font-family:sans-serif;max-width:600px;margin:60px auto;padding:24px;border:1px solid #fca5a5;background:#fee2e2;color:#991b1b;border-radius:10px;">' .
         '<h2 style="margin-top:0;">MySQL Connection Error</h2>' .
         '<p>' . htmlspecialchars($e->getMessage()) . '</p>' .
-        '<p style="font-size:14px;">Make sure MySQL is running, <code>schema.sql</code> is imported, and credentials in <code>includes/config.php</code> are correct.</p>' .
+        '<p style="font-size:13px;color:#7f1d1d;">Attempted host: <code>' . htmlspecialchars(DB_HOST . ':' . DB_PORT) . '</code> | DB: <code>' . htmlspecialchars(DB_NAME) . '</code></p>' .
+        '<p style="font-size:14px;">Make sure Environment Variables (<code>DB_HOST</code>, <code>DB_PORT</code>, <code>DB_NAME</code>, <code>DB_USER</code>, <code>DB_PASS</code>) are set and linked to your service.</p>' .
         '</div>'
     );
 }
