@@ -1,27 +1,22 @@
-# RealEstate CRM (React + TypeScript + Node.js)
+# RealEstate CRM (PHP + MySQL)
 
-A full-stack daily-use Real Estate CRM built with **React**, **TypeScript**, **Node.js (Express)**, and **SQLite** (`node:sqlite`).
+A lightweight, daily-use **Real Estate CRM** built with **PHP 8** and **MySQL (PDO)**.
 
 ## Features
-- **Authentication**: JWT login (`admin` / `admin123` default)
-- **Dashboard**: KPI stats, Today's Follow-ups, Recent Leads, Lead Source breakdown, and Activity Feed
-- **Leads**: Add, edit, delete, search, status filter, budget formatting (₹ Lakhs/Crores), Call & WhatsApp links
-- **Follow-ups**: Today, Overdue, Upcoming, and Done tabs with one-click completion
-- **Properties**: Apartment, Villa, Plot, Commercial listings with price, area, bedrooms/bathrooms, and status
-- **Activity Log**: Automatic audit trail for leads, follow-ups, and properties
+- **Authentication**: Session-based login (`admin` / `admin123` default)
+- **Dashboard**: KPI stats, Today's Follow-ups, Recent Leads, Lead Sources chart, and Activity Log
+- **Leads**: Full CRUD, search & status filter, **Smart Property Matchmaker** with `% Match` & WhatsApp Pitch, and CSV Export
+- **Deal Pipeline**: 6-stage Kanban board (`New` → `Contacted` → `Site Visit` → `Negotiation` → `Closed` → `Lost`) with stage budget totals
+- **Follow-ups**: `Today`, `Overdue`, `Upcoming`, and `Done` tabs with quick scheduling
+- **Properties**: Apartment, Villa, Plot, Commercial listings with **EMI & Brokerage Commission Calculator** and CSV Export
+- **Activity Log**: Automatic audit trail
 
-## Local Setup
-
-```bash
-# 1. Install dependencies
-npm run install:all
-
-# 2. (Optional) Seed sample real-estate data
-npx --prefix server tsx server/src/seed.ts
-
-# 3. Run backend API (port 5000) & React frontend (port 5173)
-npm run dev:server
-npm run dev:client
-```
-
-Open **http://127.0.0.1:5173/** and log in with `admin` / `admin123`.
+## Setup
+1. Import `schema.sql` into MySQL (via phpMyAdmin or `mysql -u root -p < schema.sql`).
+2. Update MySQL credentials in `includes/config.php` if needed (defaults: `127.0.0.1`, `realestate_crm`, `root`, empty password).
+3. *(Optional)* Seed sample data: `php seed.php`
+4. Run locally:
+   ```bash
+   php -S 127.0.0.1:8080
+   ```
+   Open `http://127.0.0.1:8080` and log in with `admin` / `admin123`.
